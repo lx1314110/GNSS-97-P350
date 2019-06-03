@@ -1,0 +1,113 @@
+#! /bin/sh
+
+MYNAME=$(basename $0)
+BUSYBOX_DIR=/usr/p350/app/proc
+
+BACKUP_DB_DIR=/usr/p350/db
+DES_DB_DIR=/data/db
+DB=${BACKUP_DB_DIR}/p350.db
+
+BACKUP_MAC_DIR=/usr/p350/mac
+DES_MAC_DIR=/data/mac
+MAC=${BACKUP_MAC_DIR}/mac.db
+
+restore_db_flag=0
+restore_mac_flag=0
+reboot_flag=0
+failure_reboot_flag=0
+suss_flag=0
+#usage:
+#restore [default]/all
+#
+#arg1 is all or default
+#all: restore p350.db and mac.db
+#defaut: only restore p350.db
+arg1="$1"
+[ -n "${arg1}" ] || arg1="default"
+restore_mode=${arg1}
+#arg2 is web or console
+arg2="$2"
+[ -n "${arg2}" ] || arg2="console"
+who_done=${arg2}
+
+if [ "${who_done}" = "console" ]; then
+	reboot_flag=1
+fi
+
+echo_console(){
+	echo "$@"
+}
+
+show_logger(){
+	local level="$1"
+	local msg="$2"
+	[ -n "$msg" ] || msg="$@"
+	echo_console "$msg"
+	if [ "$level" = "info" ]; then
+		logger -p local0.info  -t ${MYNAME} "$msg"
+	elif [ "$level" = "notice" ]; then
+		logger -p local0.notice  -t ${MYNAME} "$msg"
+	elif [ "$level" = "err" ]; then
+		logger -p local0.err  -t ${MYNAME} "$msg"
+	elif [ "$level" = "debug" ]; then
+		logger -p local0.debug  -t ${MYNAME} "$msg"
+	else
+		logger -p local0.info  -t ${MYNAME} "$msg"
+	fi
+}
+
+[ -e "/bin/sync" ] && SYNC="/bin/sync" || {
+        ${BUSYBOX_DIR}/busybox | grep -q sync && SYNC="${BUSYBOX_DIR}/busybox sync"
+}
+
+show_logger info "Restore to factory setting ..."
+[ "${restore_mode}" = "default" ] && {
+	if [ -e "${DB}" ]; then
+		cp -rv ${DB} ${DES_DB_DIR} && restore_db_flag=1 && show_logger info "Copy ${DB} to ${DES_DB_DIR} success"
+	else
+		show_logger err "No found the backup file:${DB}."
+		show_logger err "Restore to factory failure!"
+		exit 1
+	fi
+	suss_flag=${restore_db_flag}
+}
+
+[ "${restore_mode}" = "all" ] && {
+	#all exist
+	if [ -e "${MAC}" -a -e "${DB}" ]; then
+		#copy sussess or failure
+		cp -rv ${DB} ${DES_DB_DIR} && restore_db_flag=1 && show_logger info "Copy ${DB} to ${DES_DB_DIR} success"
+		cp -rv ${MAC} ${DES_MAC_DIR} && restore_mac_flag=1 && show_logger info "Copy ${MAC} to ${DES_MAC_DIR} success"
+	else
+		show_logger err "No found the backup file:${DB} or ${MAC}."
+		show_logger err "Restore to factory failure!"
+		exit 1
+	fi
+	if [ "${restore_db_flag}" = "1" -a "${restore_mac_flag}" = "1" ]; then
+		suss_flag=1
+	fi
+
+	if [ "${restore_db_flag}" = "0" -o "${restore_mac_flag}" = "0" ]; then
+		failure_reboot_flag=1
+	fi
+}
+
+#success and console-user reboot it. web-user reboot by web
+[ "${suss_flag}" = "1" ] && {
+	${SYNC}
+	${SYNC}
+	sleep 2
+	show_logger info "Restore to factory setting success!"
+	if [ "${reboot_flag}" = "1" ]; then
+		show_logger notice "Reboot system ..."
+		reboot
+	fi
+	exit 0
+} || {
+	show_logger info "Restore to factory setting failure!"
+	if [ "${failure_reboot_flag}" = "1" ]; then
+		show_logger notice "Reboot system ..."
+		reboot
+	fi
+	exit 2
+}

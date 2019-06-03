@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 2.8)
+aux_source_directory(. 61850_SRC_LIST)
+add_executable(p350_61850 ${61850_SRC_LIST})
+target_link_libraries(p350_61850 p350)
+install(TARGETS p350_61850 DESTINATION p350/app/proc)

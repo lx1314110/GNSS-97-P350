@@ -1,0 +1,3 @@
+set solib-search-path /hdb8/projects/datang/am335x/am335x_tq/rootfs/rootfs_tq/rootfs/lib:/e/projects/datang/P350/P350_v2/source/snmp_mib_src/build/snmp/mibso:/e/projects/datang/P350/P350_v2/source/snmp_mib_src/build/snmp/lib
+target remote 172.18.5.97:6666
+end

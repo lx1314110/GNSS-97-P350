@@ -1,0 +1,38 @@
+#! /bin/sh
+BUSYBOX_DIR=/usr/p350/app/proc
+MYNAME=$(basename $0)
+
+echo_console(){
+	echo "$@"
+}
+
+show_logger(){
+	local level="$1"
+	local msg="$2"
+	[ -n "$msg" ] || msg="$@"
+	echo_console "$msg"
+	if [ "$level" = "info" ]; then
+		logger -p local0.info  -t ${MYNAME} "$msg"
+	elif [ "$level" = "notice" ]; then
+		logger -p local0.notice  -t ${MYNAME} "$msg"
+	elif [ "$level" = "err" ]; then
+		logger -p local0.err  -t ${MYNAME} "$msg"
+	elif [ "$level" = "debug" ]; then
+		logger -p local0.debug  -t ${MYNAME} "$msg"
+	else
+		logger -p local0.info  -t ${MYNAME} "$msg"
+	fi
+}
+
+[ -e "/bin/sync" ] && SYNC="/bin/sync" || {
+        ${BUSYBOX_DIR}/busybox | grep -q sync && SYNC="${BUSYBOX_DIR}/busybox sync"
+}
+show_logger notice "Sync system ..."
+${SYNC}
+${SYNC}
+sleep 2
+show_logger notice "Kill p350 all process ..."
+killall p350_manager
+sleep 3
+show_logger notice "Reboot system ..."
+reboot

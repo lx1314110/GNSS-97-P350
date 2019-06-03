@@ -1,0 +1,33 @@
+# Ash profile 
+# vim: syntax=sh
+
+# No core files by default
+#ulimit -S -c 0 > /dev/null 2>&1
+
+export set HOME=/root
+export set P350_DIR=/usr/p350
+export set P350_SNMP_DIR=$P350_DIR/snmp
+
+if [ -f /sys/devices/virtual/input/input1/uevent ] ; then
+	export set TSLIB_TSDEVICE=/dev/event1
+	export set TSLIB_CONFFILE=/etc/ts.conf
+	export set TSLIB_CALIBFILE=/etc/pointercal
+	export set TSLIB_PLUGINDIR=/lib/ts
+	export set QWS_MOUSE_PROTO="TSLIB:/dev/event1 MouseMan:/dev/mice"
+else
+	export set QWS_MOUSE_PROTO="MouseMan:/dev/mice"
+fi
+
+#for user console
+P350_CMD_DIR=$P350_DIR/app/cmd
+export set PATH=$P350_CMD_DIR:$P350_SNMP_DIR/sbin:$P350_SNMP_DIR/bin:$PATH
+export set LD_LIBRARY_PATH=${P350_SNMP_DIR}/lib:${P350_SNMP_DIR}/mibso:/usr/local/snmp/lib:/lib:/usr/lib:/usr/local/lib
+
+USER="`id -un`"
+LOGNAME=$USER
+PS1='[\u@\h \W]# '
+PATH=$PATH
+
+HOSTNAME=`/bin/hostname`
+
+export USER LOGNAME PS1 PATH

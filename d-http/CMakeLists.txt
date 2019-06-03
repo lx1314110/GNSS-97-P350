@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 2.8)
+set(HTTP_SRC_LIST mini_httpd.c  match.c  tdate_parse.c )
+add_executable(p350_http ${HTTP_SRC_LIST})
+install(TARGETS p350_http DESTINATION p350/app/proc)
+install(FILES p350.conf DESTINATION p350/app)

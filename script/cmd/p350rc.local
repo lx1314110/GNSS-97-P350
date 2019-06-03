@@ -1,0 +1,175 @@
+#!/bin/sh
+#version:v0.2
+#add your code
+
+MYNAME=$(basename $0)
+
+P350_DIR=/usr/p350
+APP_DB_DIR=/usr/p350/app/db
+APP_FPGA_DIR=/usr/p350/app/fpga
+APP_WEB_DIR=/usr/p350/app/www
+APP_SNMP_DIR=/usr/p350/app/snmp
+#INIT SCRIPT
+APP_INIT_DIR=/usr/p350/app/init
+
+DB=${APP_DB_DIR}/p350.db
+
+#INIT
+INIT_ETC_DIR=${APP_INIT_DIR}/etc
+INIT_HOME_ROOT_DIR=${APP_INIT_DIR}/root
+INIT_MD5SUM_FILE=${APP_INIT_DIR}/md5sum.sh
+echo_console(){
+	echo "$@"
+}
+
+show_logger(){
+	local level="$1"
+	local msg="$2"
+	[ -n "$msg" ] || msg="$@"
+	echo_console "$msg"
+	
+	LOG_TYPE=local0
+	#LOG_TYPE=user
+	if [ "$level" = "info" ]; then
+		logger -p ${LOG_TYPE}.info  -t ${MYNAME} "$msg"
+	elif [ "$level" = "notice" ]; then
+		logger -p ${LOG_TYPE}.notice  -t ${MYNAME} "$msg"
+	elif [ "$level" = "err" ]; then
+		logger -p ${LOG_TYPE}.err  -t ${MYNAME} "$msg"
+	elif [ "$level" = "debug" ]; then
+		logger -p ${LOG_TYPE}.debug  -t ${MYNAME} "$msg"
+	else
+		logger -p ${LOG_TYPE}.info  -t ${MYNAME} "$msg"
+	fi
+}
+#main###############
+
+show_logger info "User init..."
+CPU_PLATFORM=`cat /proc/cpuinfo | grep "Hardware" | awk -F: '{print $2}' | sed 's/^[ \t]*//g'`
+[ "$CPU_PLATFORM" = "TQ2416" ] && {
+	FPGA=${APP_FPGA_DIR}/fpga_tq2416.rbf
+} || {
+	#tq3358
+	FPGA=${APP_FPGA_DIR}/fpga_tq335x.rbf
+}
+
+WWW_INDEX_HTML=${APP_WEB_DIR}/index.html
+SNMP_CONF_FILE=${APP_SNMP_DIR}/snmpd.conf
+
+BACKUP_DB_DIR=/usr/p350/db
+DES_DB_DIR=/data/db
+
+DES_FPGA_DIR=/usr/p350/fpga
+DES_WEB_DIR=/usr/p350/www
+DES_SNMP_DIR=/usr/p350/snmp
+
+update_result() {
+	local name="$1"
+	local result="$2"
+	[ "$result" = "1" ] && {
+		show_logger info "Update the ${name} success!"
+	} || {
+		show_logger err "Update the ${name} failure!"
+	}
+}
+
+
+##############main###############
+[ -e "${DB}" ] && {
+	suss=0
+	update_name="databate"
+	show_logger info "Update the ${update_name} ..."
+	rm -rf ${BACKUP_DB_DIR} ${DES_DB_DIR}
+	mkdir -p ${BACKUP_DB_DIR} ${DES_DB_DIR}
+	cp -rv ${DB} ${BACKUP_DB_DIR}
+	cp -rv ${DB} ${DES_DB_DIR} && suss=1
+	rm -rf ${APP_DB_DIR}
+	sync
+	sync
+	update_result "${update_name}" ${suss}
+}
+
+[ -e "${FPGA}" ] && {
+	suss=0
+	update_name="fpga"
+	show_logger info "Update the ${update_name} (${CPU_PLATFORM}) ..."
+	rm -rf ${DES_FPGA_DIR}
+	mkdir -p ${DES_FPGA_DIR}
+	cp -rv ${FPGA} ${DES_FPGA_DIR}/fpga.rbf && suss=1
+	rm -rf ${APP_FPGA_DIR}
+	sync
+	sync
+	update_result "${update_name}" ${suss}
+}
+
+[ -e "${SNMP_CONF_FILE}" ] && {
+	suss=0
+	update_name="snmp"
+	show_logger info "Update the ${update_name} ..."
+	rm -rf ${DES_SNMP_DIR}
+	mkdir -p ${DES_SNMP_DIR}
+	cp -rv ${APP_SNMP_DIR}/* ${DES_SNMP_DIR} && suss=1
+	rm -rf ${APP_SNMP_DIR}
+	sync
+	sync
+	update_result "${update_name}" ${suss}
+}
+
+[ -e "${WWW_INDEX_HTML}" ] && {
+	suss=0
+	update_name="web"
+	show_logger info "Update the ${update_name} ..."
+	rm -rf ${DES_WEB_DIR}
+	mkdir -p ${DES_WEB_DIR}
+	cp -rv ${APP_WEB_DIR}/* ${DES_WEB_DIR} && suss=1
+	rm -rf ${APP_WEB_DIR}
+	sync
+	sync
+	update_result "${update_name}" ${suss}
+}
+
+WWW_DIR=/usr/p350/www
+FLUSH_USERINFO_TO_CGI=${WWW_DIR}/create_htpasswd_to_cgidir
+[ -x ${FLUSH_USERINFO_TO_CGI} ] && {
+	show_logger info "Flush the userinfo to the cgi of www..."
+	${FLUSH_USERINFO_TO_CGI} && show_logger info "Flush finish!"
+}
+
+
+#INIT SCRIPT
+SYS_ETC_DIR=/etc
+SYS_HOME_ROOT_DIR=/root
+[ -d "${APP_INIT_DIR}" ] && {
+	suss=0
+	update_name="system init script"
+	show_logger info "Update the ${update_name} ..."
+	#init.d
+	if [ -d "${INIT_ETC_DIR}" ]; then
+		suss=0
+		mkdir -p ${SYS_ETC_DIR}
+		chmod 0755 ${INIT_ETC_DIR}/*
+		cp -rv ${INIT_ETC_DIR}/*  ${SYS_ETC_DIR} && suss=1
+	fi
+	#root
+	if [ -d "${INIT_HOME_ROOT_DIR}" ]; then
+		suss=0
+		mkdir -p ${SYS_HOME_ROOT_DIR}
+		chmod 0755 ${INIT_HOME_ROOT_DIR}/*
+		cp -rv ${INIT_HOME_ROOT_DIR}/*  ${SYS_HOME_ROOT_DIR} && suss=1
+	fi
+	#md5sum
+	if [ -e "${INIT_MD5SUM_FILE}" ]; then
+		suss=0
+		chmod 0755 ${INIT_MD5SUM_FILE}
+		cp -rv ${INIT_MD5SUM_FILE} ${P350_DIR} && suss=1
+	fi
+	
+	update_result "${update_name}" ${suss}
+	[ ${suss} = 1 ] && {
+		echo "Reboot ..."
+		rm -rf ${APP_INIT_DIR} && sync && sync && reboot	
+	}
+}
+sleep 1
+show_logger info "User init finish!"
+exit 0

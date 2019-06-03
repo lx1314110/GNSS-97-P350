@@ -1,0 +1,98 @@
+﻿# git忽略通用文件
+
+# 项目内部文件夹
+
+# keil 编译文件
+*.lst
+*.map
+*.iex
+*.*i
+*.d
+*.crf
+*.o
+*.htm
+*.plg
+*.tra
+*.l*p
+*fed
+
+# keil 项目多余文件
+*.uvgui.*
+*.uvopt
+*.dep
+
+# keil 51编译文件
+*.A51
+*.OBJ
+*.M51
+
+# 通用文件
+*.axf
+*.hex
+*.bin
+*.exe
+*.bak
+*.xml
+
+#source insight 
+*.IAB
+*.IAD
+*.IMB
+*.IMD
+*.PFI
+*.PO
+*.PR
+*.PRI
+*.PS
+*.SearchResults
+*.WK3
+
+# 网页说明文件
+
+#*.html
+
+# 忽略文件文件本身
+
+#.gitignore
+
+# RVDS
+
+*.aws
+*.brd
+*.auc
+
+*.c~
+*.h~
+*.cmake
+*.so
+*.a
+/build
+CMakeFiles
+/upgrade_web
+/www
+
+#target bin
+app/
+#bin
+/cmd/c-alarm/p350alm
+/cmd/c-dbg/p350dbg
+/cmd/c-input/p350in
+/cmd/c-log/p350log
+/cmd/c-output/p350out
+/cmd/c-sys/p350sys
+/d-61850/p350_61850
+/d-alarm/p350_alarm
+/d-eprom/eprom
+/d-http/p350_http
+/d-input/p350_input
+/d-keylcd/p350_keylcd
+/d-manager/p350_manager
+/d-ntp/p350_ntp
+/d-output/p350_output
+/d-wg/p350_wg
+/test/fpga/fpga_test
+/test/fpga_addr/fpga_addr
+/test/fpga_addr_print/fpga_addr_print
+/test/printf_delay/printf_delay
+/test/time_ratio/time_ratio
+/test/time_ratio_ns/time_ratio_ns

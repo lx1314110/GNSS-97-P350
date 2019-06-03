@@ -1,0 +1,3 @@
+
+#define	SW_VER		"V@P350_VERSION_MAJOR@.@P350_VERSION_MINOR@"
+#define	HW_VER		"V01.00"//硬件版本

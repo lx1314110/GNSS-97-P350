@@ -1,0 +1,192 @@
+#!/bin/bash
+#set -x
+mypid=$$
+#grep  "^[0\|1] | 0 |"
+CUR_ALM_CMD="p350alm"
+TMP_ALM_FILE="/tmp/p350alm_cur_${mypid}.tmp"
+#UNSHIELD_CMD="cat ${TMP_ALM_FILE} | grep  \"^[0\|1] | 0 |\""
+#SHIELD_CMD="cat ${TMP_ALM_FILE} | grep  \"^[0\|1] | 1 |\""
+UNSHIELD_CMD="cat ${TMP_ALM_FILE} | grep  \"^1 | 0 |\""
+SHIELD_CMD="cat ${TMP_ALM_FILE} | grep  \"^1 | 1 |\""
+LIST_SHIELD_CMD="cat ${TMP_ALM_FILE} | grep  \"^[0\|1] | 1 |\""
+LIST_CMD="cat ${TMP_ALM_FILE}"
+PER_PAGE_RECORD=20
+
+
+#===============================================================================
+# Functions
+#===============================================================================
+show_usage ()
+{
+    cat <<EOF
+Usage: $MYNAME options
+
+Description: Show current unshield or shield alarm information.
+
+Options (Required)
+ unshield [NUM]
+         total the page nums of the unshield alarm.
+	NUM:
+         show the unshield-alarm content on page NUM.
+
+ shield [NUM]
+         show the page nums of the shield alarm.
+    NUM:
+         show the shield-alarm content on page NUM.
+ list [NUM]
+         show the page nums of current all supported alarm table.
+    NUM:
+         show the supported alarm content on page NUM.
+ list-shield [NUM]
+         show the page nums of current all supported shield-alarm table.
+    NUM:
+         show the supported shield-alarm content on page NUM.
+
+ unshield|shield|list|list-shield  almnum
+         show the record nums of the unshield|shield|list|list-shield alarm.
+
+Examples:
+ $MYNAME unshield
+ $MYNAME unshield 1
+         show alm_sta|mask|index|alm_id|slot|port|bid|msg|start_time|record_id(snmp)
+ $MYNAME unshield almnum
+ $MYNAME shield
+         show alm_sta|mask|index|alm_id|slot|port|bid|msg
+ $MYNAME shield 2
+ $MYNAME shield almnum
+
+ $MYNAME list
+ $MYNAME list 2
+         show alm_sta|mask|index|alm_id|slot|port|bid|msg
+ $MYNAME list almnum
+
+ $MYNAME list-shield
+ $MYNAME list-shield 2
+         show alm_sta|mask|index|alm_id|slot|port|bid|msg
+ $MYNAME list-shield almnum
+
+EOF
+}
+
+EXIT_ERROR ()
+{
+    #echo -ne "\e[1;31m"; echo; echo -n "$@"; echo -ne "\e[0m\n\n"
+    echo "$@"
+    rm -rf ${TMP_ALM_FILE} 
+    exit 1
+}
+
+EXIT_OK ()
+{
+    rm -rf ${TMP_ALM_FILE} 
+    exit 0
+}
+
+PRINT_CUR_ALARM()
+{
+	local alm_query_cmd="$1"
+	local alm_offset="$2"
+	local alm_curnums_per_page="$3"
+	if [ "${alm_offset}" -gt "0" -a "${alm_curnums_per_page}" -gt "0" ]; then
+		eval ${alm_query_cmd} | head -n ${alm_offset} | tail -n ${alm_curnums_per_page}
+	else
+		EXIT_ERROR "Failure."
+	fi
+}
+
+#main
+#
+MYNAME=${0##*/}
+
+arg1="$1"
+[ -n "${arg1}" ] || arg1="-h"
+arg2="$2"
+case ${arg1} in
+	shield | unshield )
+		CUR_ALM_CMD="p350alm current 1"
+		;;
+	list | list-shield)
+		CUR_ALM_CMD="p350alm"
+		;;
+	-h | --help )
+		show_usage && EXIT_OK
+		;;
+	* )
+		show_usage && EXIT_ERROR "Failure."
+		;;
+esac
+
+${CUR_ALM_CMD} > ${TMP_ALM_FILE} 2>&1
+[ -e "${TMP_ALM_FILE}" ] || {
+	EXIT_ERROR "Failure"
+}
+cat ${TMP_ALM_FILE} | grep "^Failure." > /dev/null 2>&1
+if [ "0" = $? ];then
+	EXIT_ERROR "Failure."
+fi
+
+case ${arg1} in
+	shield )
+		ALM_NUMS=$(eval ${SHIELD_CMD} | wc -l)
+		;;
+	unshield )
+		ALM_NUMS=$(eval ${UNSHIELD_CMD} | wc -l)
+		;;
+	list )
+		ALM_NUMS=$(eval ${LIST_CMD} | wc -l)
+		;;
+	list-shield )
+		ALM_NUMS=$(eval ${LIST_SHIELD_CMD} | wc -l)
+		;;
+esac
+
+RECORD_NUM_TAIL_PAGE=`expr ${ALM_NUMS} % ${PER_PAGE_RECORD}`
+[ "${RECORD_NUM_TAIL_PAGE}" -eq "0" ] && {
+	ALM_PAGES=`expr ${ALM_NUMS} / ${PER_PAGE_RECORD}`
+	RECORD_NUM_TAIL_PAGE=${PER_PAGE_RECORD}
+} || {
+	ALM_PAGES=`expr ${ALM_NUMS} / ${PER_PAGE_RECORD} + 1`
+}
+#one ARG
+[ -n "${arg2}" ] || {
+	echo ${ALM_PAGES}
+	EXIT_OK
+}
+
+#TWO ARG
+case ${arg2} in
+	-h | --help )
+		show_usage && EXIT_OK
+		;;
+	almnum )
+		echo ${ALM_NUMS}
+		EXIT_OK
+		;;
+	[0-9]* )
+		CUR_PAGE=${arg2};
+		if [ "${CUR_PAGE}" -gt "${ALM_PAGES}" ]; then
+			#echo "Over MAX PAGES:${ALM_PAGES}"
+			EXIT_ERROR "Failure."
+		fi
+		ALM_OFFSET_CUR_PAGE=`expr ${CUR_PAGE} \* ${PER_PAGE_RECORD} `
+		[ "${CUR_PAGE}" -eq "${ALM_PAGES}" ] && {
+			ALM_NUMS_CUR_PAGE=${RECORD_NUM_TAIL_PAGE}
+		} || {
+			ALM_NUMS_CUR_PAGE=${PER_PAGE_RECORD}
+		}
+
+		if [ ${arg1} = "shield" ]; then
+			PRINT_CUR_ALARM "${SHIELD_CMD}" "${ALM_OFFSET_CUR_PAGE}" "${ALM_NUMS_CUR_PAGE}"
+		elif [ ${arg1} = "unshield" ]; then
+			PRINT_CUR_ALARM "${UNSHIELD_CMD}" "${ALM_OFFSET_CUR_PAGE}" "${ALM_NUMS_CUR_PAGE}"
+		elif [ ${arg1} = "list" ]; then
+			PRINT_CUR_ALARM "${LIST_CMD}" "${ALM_OFFSET_CUR_PAGE}" "${ALM_NUMS_CUR_PAGE}"
+		elif [ ${arg1} = "list-shield" ]; then
+			PRINT_CUR_ALARM "${LIST_SHIELD_CMD}" "${ALM_OFFSET_CUR_PAGE}" "${ALM_NUMS_CUR_PAGE}"
+		fi
+		;;
+	* )
+		show_usage && EXIT_ERROR "Failure."
+		;;
+esac
+EXIT_OK
