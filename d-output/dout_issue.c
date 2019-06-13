@@ -1971,58 +1971,196 @@ static int Ptp2SendConfig(int fpga_fd, int slot, struct ptpinfo *cfg)
 
 	/*ip地址必须向设置，如果P50没有设置ip地址情况下不能正常启动*/
 	//ip
-	if(memcmp(cfg->ptpIp, old_ptpIp[slot-1], sizeof(cfg->ptpIp)) != 0){
-		memset(buf, 0, sizeof(buf));
-		//ip_to_hex((char *)cfg->ptpIp);
-		P50_2_FILL_IP(buf, cfg->ptpIp);
-		//printf("%s\n",buf);
-		tmp = strlen(buf)+1;
-		memcpy(ptpCmd +len, buf, tmp);
-		if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
-		{
-				return 0;
+	if(LAYER3 == cfg->ptpLayer && UNICAST == cfg->ptpMulticast )
+	{
+            tmp = strlen(P50_CMD_PTP_OFF)+1;
+			memcpy(ptpCmd +len, P50_CMD_PTP_OFF, tmp);
+			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
+			{
+					return 0;
+			}
+			usleep(PTP_DELAY_TIME);
+			usleep(PTP_DELAY_TIME);
+			len += tmp;
+
+			//ip
+			memset(buf, 0, sizeof(buf));
+			//ip_to_hex((char *)cfg->ptpIp);
+			P50_2_FILL_IP(buf, cfg->ptpIp);
+			//printf("%s\n",buf);
+			tmp = strlen(buf)+1;
+			memcpy(ptpCmd +len, buf, tmp);
+			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
+			{
+					return 0;
+			}
+			usleep(PTP_DELAY_TIME);
+			
+			len += tmp;
+
+			memcpy(old_ptpIp[slot-1], cfg->ptpIp, sizeof(cfg->ptpIp));
+			usleep(PTP_DELAY_TIME);
+
+			//mask
+			memset(buf, 0, sizeof(buf));
+			//ip_to_hex((char *)cfg->ptpIp);
+			P50_2_FILL_MASK(buf, cfg->ptpMask);
+			//printf("%s\n",buf);
+			tmp = strlen(buf)+1;
+			memcpy(ptpCmd +len, buf, tmp);
+			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
+			{
+					return 0;
+			}
+			usleep(PTP_DELAY_TIME);
+			len += tmp;
+
+			memcpy(old_ptpMask[slot-1], cfg->ptpMask, sizeof(cfg->ptpMask));
+			usleep(PTP_DELAY_TIME);
+
+			//gateway
+			memset(buf, 0, sizeof(buf));
+			//ip_to_hex((char *)cfg->ptpIp);
+			P50_2_FILL_GATEWAY(buf, cfg->ptpGateway);
+			//printf("%s\n",buf);
+			tmp = strlen(buf)+1;
+			memcpy(ptpCmd +len, buf, tmp);
+			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
+			{
+					return 0;
+			}
+			usleep(8*PTP_DELAY_TIME);
+			len += tmp;
+			memcpy(old_ptpGateway[slot-1], cfg->ptpGateway, sizeof(cfg->ptpGateway));
+			usleep(PTP_DELAY_TIME);
+
+			tmp = strlen(P50_CMD_PTP_ON)+1;
+			memcpy(ptpCmd +len, P50_CMD_PTP_ON, tmp);
+			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
+			{
+					return 0;
+			}
+			usleep(PTP_DELAY_TIME);
+			usleep(PTP_DELAY_TIME);
+			len += tmp;
+
+			tmp = strlen(P50_CMD_ESMC_AUTO)+1;
+			memcpy(ptpCmd +len, P50_CMD_ESMC_AUTO, tmp);
+			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
+			{
+					return 0;
+			}
+			usleep(PTP_DELAY_TIME);
+			usleep(PTP_DELAY_TIME);
+			len += tmp;
+
+			tmp = strlen(P50_CMD_IN_CM_TOD)+1;
+			memcpy(ptpCmd +len, P50_CMD_IN_CM_TOD, tmp);
+			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
+			{
+					return 0;
+			}
+			usleep(PTP_DELAY_TIME);
+			usleep(PTP_DELAY_TIME);
+			len += tmp;
+
+			tmp = strlen(P50_CMD_IN_B9600)+1;
+			memcpy(ptpCmd +len, P50_CMD_IN_B9600, tmp);
+			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
+			{
+					return 0;
+			}
+			usleep(PTP_DELAY_TIME);
+			usleep(PTP_DELAY_TIME);
+			len += tmp;
+
+			tmp = strlen(P50_CMD_CLOCK_CLASS)+1;
+			memcpy(ptpCmd +len, P50_CMD_CLOCK_CLASS, tmp);
+			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
+			{
+					return 0;
+			}
+			usleep(PTP_DELAY_TIME);
+			usleep(PTP_DELAY_TIME);
+			len += tmp;
+
+			tmp = strlen(P50_CMD_HOLD_TIME)+1;
+			memcpy(ptpCmd +len, P50_CMD_HOLD_TIME, tmp);
+			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
+			{
+					return 0;
+			}
+			usleep(PTP_DELAY_TIME);
+			usleep(PTP_DELAY_TIME);
+			len += tmp;
+
+			tmp = strlen(P50_CMD_SSM_CLASS)+1;
+			memcpy(ptpCmd +len, P50_CMD_SSM_CLASS, tmp);
+			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
+			{
+					return 0;
+			}
+			usleep(PTP_DELAY_TIME);
+			usleep(PTP_DELAY_TIME);
+			len += tmp;
+			
 		}
-		usleep(PTP_DELAY_TIME);
-		len += tmp;
+	    else
+	    {
+	    	  
+			if(memcmp(cfg->ptpIp, old_ptpIp[slot-1], sizeof(cfg->ptpIp)) != 0){
+				memset(buf, 0, sizeof(buf));
+				//ip_to_hex((char *)cfg->ptpIp);
+				P50_2_FILL_IP(buf, cfg->ptpIp);
+				//printf("%s\n",buf);
+				tmp = strlen(buf)+1;
+				memcpy(ptpCmd +len, buf, tmp);
+				if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
+				{
+						return 0;
+				}
+				usleep(PTP_DELAY_TIME);
+				len += tmp;
 
-		memcpy(old_ptpIp[slot-1], cfg->ptpIp, sizeof(cfg->ptpIp));
-	}
+				memcpy(old_ptpIp[slot-1], cfg->ptpIp, sizeof(cfg->ptpIp));
+			}
 
-	//mask
-	if(memcmp(cfg->ptpMask, old_ptpMask[slot-1], sizeof(cfg->ptpMask)) != 0){
-		memset(buf, 0, sizeof(buf));
-		//ip_to_hex((char *)cfg->ptpIp);
-		P50_2_FILL_MASK(buf, cfg->ptpMask);
-		//printf("%s\n",buf);
-		tmp = strlen(buf)+1;
-		memcpy(ptpCmd +len, buf, tmp);
-		if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
-		{
-				return 0;
-		}
-		usleep(PTP_DELAY_TIME);
-		len += tmp;
+			//mask
+			if(memcmp(cfg->ptpMask, old_ptpMask[slot-1], sizeof(cfg->ptpMask)) != 0){
+				memset(buf, 0, sizeof(buf));
+				//ip_to_hex((char *)cfg->ptpIp);
+				P50_2_FILL_MASK(buf, cfg->ptpMask);
+				//printf("%s\n",buf);
+				tmp = strlen(buf)+1;
+				memcpy(ptpCmd +len, buf, tmp);
+				if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
+				{
+						return 0;
+				}
+				usleep(PTP_DELAY_TIME);
+				len += tmp;
 
-		memcpy(old_ptpMask[slot-1], cfg->ptpMask, sizeof(cfg->ptpMask));
-	}
+				memcpy(old_ptpMask[slot-1], cfg->ptpMask, sizeof(cfg->ptpMask));
+			}
 
-	//gateway
-	if(memcmp(cfg->ptpGateway, old_ptpGateway[slot-1], sizeof(cfg->ptpGateway)) != 0){
-		memset(buf, 0, sizeof(buf));
-		//ip_to_hex((char *)cfg->ptpIp);
-		P50_2_FILL_GATEWAY(buf, cfg->ptpGateway);
-		//printf("%s\n",buf);
-		tmp = strlen(buf)+1;
-		memcpy(ptpCmd +len, buf, tmp);
-		if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
-		{
-				return 0;
-		}
-		usleep(PTP_DELAY_TIME);
-		len += tmp;
+			//gateway
+			if(memcmp(cfg->ptpGateway, old_ptpGateway[slot-1], sizeof(cfg->ptpGateway)) != 0){
+				memset(buf, 0, sizeof(buf));
+				//ip_to_hex((char *)cfg->ptpIp);
+				P50_2_FILL_GATEWAY(buf, cfg->ptpGateway);
+				//printf("%s\n",buf);
+				tmp = strlen(buf)+1;
+				memcpy(ptpCmd +len, buf, tmp);
+				if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
+				{
+						return 0;
+				}
+				usleep(PTP_DELAY_TIME);
+				len += tmp;
 
-		memcpy(old_ptpGateway[slot-1], cfg->ptpGateway, sizeof(cfg->ptpGateway));
-	}
+				memcpy(old_ptpGateway[slot-1], cfg->ptpGateway, sizeof(cfg->ptpGateway));
+			}
+	   }
 	
 	//delay type
 	if(DELAY_E2E == cfg->ptpDelayType)
@@ -2388,7 +2526,7 @@ static int PtpfSendConfig(int fpga_fd, int slot, struct ptpfinfo *cfg)
 	memset(ptpCmd, 0, sizeof(ptpCmd));
 
 
-	/* 登陆*/
+	/* login */
 	tmp = strlen("\rroot\rroot\r");
 	memset(buf, 0, sizeof(buf));
 	memcpy(buf, "\rroot\rroot\r", tmp);

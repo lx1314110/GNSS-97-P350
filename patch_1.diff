@@ -1,0 +1,295 @@
+diff --git a/d-input/din_p50.h b/d-input/din_p50.h
+index 88d0e8d..7d4c69e 100644
+--- a/d-input/din_p50.h
++++ b/d-input/din_p50.h
+@@ -166,7 +166,7 @@ command subcommand value: Sets associated parameter to new value.
+ //9600
+ #define	P50_CMD_IN_B9600		"ptp2 g i default 9600\n"
+ //vco
+-#define P50_CMD_VCO             "ptp2 config -v 1000\n"
++#define P50_CMD_VCO             "ptp2 config -v 0\n"
+ //clock mode
+ #define P50_CMD_CLOCK_SLAVE     "ptp2 c s on\n"
+ 
+diff --git a/d-output/dout_issue.c b/d-output/dout_issue.c
+index dd16a4a..31ad2b2 100644
+--- a/d-output/dout_issue.c
++++ b/d-output/dout_issue.c
+@@ -1971,58 +1971,196 @@ static int Ptp2SendConfig(int fpga_fd, int slot, struct ptpinfo *cfg)
+ 
+ 	/*ip地址必须向设置，如果P50没有设置ip地址情况下不能正常启动*/
+ 	//ip
+-	if(memcmp(cfg->ptpIp, old_ptpIp[slot-1], sizeof(cfg->ptpIp)) != 0){
+-		memset(buf, 0, sizeof(buf));
+-		//ip_to_hex((char *)cfg->ptpIp);
+-		P50_2_FILL_IP(buf, cfg->ptpIp);
+-		//printf("%s\n",buf);
+-		tmp = strlen(buf)+1;
+-		memcpy(ptpCmd +len, buf, tmp);
+-		if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
+-		{
+-				return 0;
+-		}
+-		usleep(PTP_DELAY_TIME);
+-		len += tmp;
++	if(LAYER3 == cfg->ptpLayer && UNICAST == cfg->ptpMulticast )
++	{
++            tmp = strlen(P50_CMD_PTP_OFF)+1;
++			memcpy(ptpCmd +len, P50_CMD_PTP_OFF, tmp);
++			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
++			{
++					return 0;
++			}
++			usleep(PTP_DELAY_TIME);
++			usleep(PTP_DELAY_TIME);
++			len += tmp;
+ 
+-		memcpy(old_ptpIp[slot-1], cfg->ptpIp, sizeof(cfg->ptpIp));
+-	}
++			//ip
++			memset(buf, 0, sizeof(buf));
++			//ip_to_hex((char *)cfg->ptpIp);
++			P50_2_FILL_IP(buf, cfg->ptpIp);
++			//printf("%s\n",buf);
++			tmp = strlen(buf)+1;
++			memcpy(ptpCmd +len, buf, tmp);
++			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
++			{
++					return 0;
++			}
++			usleep(PTP_DELAY_TIME);
++			
++			len += tmp;
+ 
+-	//mask
+-	if(memcmp(cfg->ptpMask, old_ptpMask[slot-1], sizeof(cfg->ptpMask)) != 0){
+-		memset(buf, 0, sizeof(buf));
+-		//ip_to_hex((char *)cfg->ptpIp);
+-		P50_2_FILL_MASK(buf, cfg->ptpMask);
+-		//printf("%s\n",buf);
+-		tmp = strlen(buf)+1;
+-		memcpy(ptpCmd +len, buf, tmp);
+-		if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
+-		{
+-				return 0;
+-		}
+-		usleep(PTP_DELAY_TIME);
+-		len += tmp;
++			memcpy(old_ptpIp[slot-1], cfg->ptpIp, sizeof(cfg->ptpIp));
++			usleep(PTP_DELAY_TIME);
+ 
+-		memcpy(old_ptpMask[slot-1], cfg->ptpMask, sizeof(cfg->ptpMask));
+-	}
++			//mask
++			memset(buf, 0, sizeof(buf));
++			//ip_to_hex((char *)cfg->ptpIp);
++			P50_2_FILL_MASK(buf, cfg->ptpMask);
++			//printf("%s\n",buf);
++			tmp = strlen(buf)+1;
++			memcpy(ptpCmd +len, buf, tmp);
++			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
++			{
++					return 0;
++			}
++			usleep(PTP_DELAY_TIME);
++			len += tmp;
+ 
+-	//gateway
+-	if(memcmp(cfg->ptpGateway, old_ptpGateway[slot-1], sizeof(cfg->ptpGateway)) != 0){
+-		memset(buf, 0, sizeof(buf));
+-		//ip_to_hex((char *)cfg->ptpIp);
+-		P50_2_FILL_GATEWAY(buf, cfg->ptpGateway);
+-		//printf("%s\n",buf);
+-		tmp = strlen(buf)+1;
+-		memcpy(ptpCmd +len, buf, tmp);
+-		if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
+-		{
+-				return 0;
++			memcpy(old_ptpMask[slot-1], cfg->ptpMask, sizeof(cfg->ptpMask));
++			usleep(PTP_DELAY_TIME);
++
++			//gateway
++			memset(buf, 0, sizeof(buf));
++			//ip_to_hex((char *)cfg->ptpIp);
++			P50_2_FILL_GATEWAY(buf, cfg->ptpGateway);
++			//printf("%s\n",buf);
++			tmp = strlen(buf)+1;
++			memcpy(ptpCmd +len, buf, tmp);
++			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
++			{
++					return 0;
++			}
++			usleep(8*PTP_DELAY_TIME);
++			len += tmp;
++			memcpy(old_ptpGateway[slot-1], cfg->ptpGateway, sizeof(cfg->ptpGateway));
++			usleep(PTP_DELAY_TIME);
++
++			tmp = strlen(P50_CMD_PTP_ON)+1;
++			memcpy(ptpCmd +len, P50_CMD_PTP_ON, tmp);
++			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
++			{
++					return 0;
++			}
++			usleep(PTP_DELAY_TIME);
++			usleep(PTP_DELAY_TIME);
++			len += tmp;
++
++			tmp = strlen(P50_CMD_ESMC_AUTO)+1;
++			memcpy(ptpCmd +len, P50_CMD_ESMC_AUTO, tmp);
++			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
++			{
++					return 0;
++			}
++			usleep(PTP_DELAY_TIME);
++			usleep(PTP_DELAY_TIME);
++			len += tmp;
++
++			tmp = strlen(P50_CMD_IN_CM_TOD)+1;
++			memcpy(ptpCmd +len, P50_CMD_IN_CM_TOD, tmp);
++			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
++			{
++					return 0;
++			}
++			usleep(PTP_DELAY_TIME);
++			usleep(PTP_DELAY_TIME);
++			len += tmp;
++
++			tmp = strlen(P50_CMD_IN_B9600)+1;
++			memcpy(ptpCmd +len, P50_CMD_IN_B9600, tmp);
++			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
++			{
++					return 0;
++			}
++			usleep(PTP_DELAY_TIME);
++			usleep(PTP_DELAY_TIME);
++			len += tmp;
++
++			tmp = strlen(P50_CMD_CLOCK_CLASS)+1;
++			memcpy(ptpCmd +len, P50_CMD_CLOCK_CLASS, tmp);
++			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
++			{
++					return 0;
++			}
++			usleep(PTP_DELAY_TIME);
++			usleep(PTP_DELAY_TIME);
++			len += tmp;
++
++			tmp = strlen(P50_CMD_HOLD_TIME)+1;
++			memcpy(ptpCmd +len, P50_CMD_HOLD_TIME, tmp);
++			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
++			{
++					return 0;
++			}
++			usleep(PTP_DELAY_TIME);
++			usleep(PTP_DELAY_TIME);
++			len += tmp;
++
++			tmp = strlen(P50_CMD_SSM_CLASS)+1;
++			memcpy(ptpCmd +len, P50_CMD_SSM_CLASS, tmp);
++			if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
++			{
++					return 0;
++			}
++			usleep(PTP_DELAY_TIME);
++			usleep(PTP_DELAY_TIME);
++			len += tmp;
++			
+ 		}
+-		usleep(PTP_DELAY_TIME);
+-		len += tmp;
++	    else
++	    {
++	    	  
++			if(memcmp(cfg->ptpIp, old_ptpIp[slot-1], sizeof(cfg->ptpIp)) != 0){
++				memset(buf, 0, sizeof(buf));
++				//ip_to_hex((char *)cfg->ptpIp);
++				P50_2_FILL_IP(buf, cfg->ptpIp);
++				//printf("%s\n",buf);
++				tmp = strlen(buf)+1;
++				memcpy(ptpCmd +len, buf, tmp);
++				if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
++				{
++						return 0;
++				}
++				usleep(PTP_DELAY_TIME);
++				len += tmp;
+ 
+-		memcpy(old_ptpGateway[slot-1], cfg->ptpGateway, sizeof(cfg->ptpGateway));
+-	}
++				memcpy(old_ptpIp[slot-1], cfg->ptpIp, sizeof(cfg->ptpIp));
++			}
++
++			//mask
++			if(memcmp(cfg->ptpMask, old_ptpMask[slot-1], sizeof(cfg->ptpMask)) != 0){
++				memset(buf, 0, sizeof(buf));
++				//ip_to_hex((char *)cfg->ptpIp);
++				P50_2_FILL_MASK(buf, cfg->ptpMask);
++				//printf("%s\n",buf);
++				tmp = strlen(buf)+1;
++				memcpy(ptpCmd +len, buf, tmp);
++				if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
++				{
++						return 0;
++				}
++				usleep(PTP_DELAY_TIME);
++				len += tmp;
++
++				memcpy(old_ptpMask[slot-1], cfg->ptpMask, sizeof(cfg->ptpMask));
++			}
++
++			//gateway
++			if(memcmp(cfg->ptpGateway, old_ptpGateway[slot-1], sizeof(cfg->ptpGateway)) != 0){
++				memset(buf, 0, sizeof(buf));
++				//ip_to_hex((char *)cfg->ptpIp);
++				P50_2_FILL_GATEWAY(buf, cfg->ptpGateway);
++				//printf("%s\n",buf);
++				tmp = strlen(buf)+1;
++				memcpy(ptpCmd +len, buf, tmp);
++				if(0 == p50_write(fpga_fd, slot, (u8_t *)(ptpCmd +len), tmp))
++				{
++						return 0;
++				}
++				usleep(PTP_DELAY_TIME);
++				len += tmp;
++
++				memcpy(old_ptpGateway[slot-1], cfg->ptpGateway, sizeof(cfg->ptpGateway));
++			}
++	   }
+ 	
+ 	//delay type
+ 	if(DELAY_E2E == cfg->ptpDelayType)
+@@ -2388,7 +2526,7 @@ static int PtpfSendConfig(int fpga_fd, int slot, struct ptpfinfo *cfg)
+ 	memset(ptpCmd, 0, sizeof(ptpCmd));
+ 
+ 
+-	/* 登陆*/
++	/* login */
+ 	tmp = strlen("\rroot\rroot\r");
+ 	memset(buf, 0, sizeof(buf));
+ 	memcpy(buf, "\rroot\rroot\r", tmp);
+diff --git a/d-output/dout_p50.h b/d-output/dout_p50.h
+index 7de1fcd..b68c927 100644
+--- a/d-output/dout_p50.h
++++ b/d-output/dout_p50.h
+@@ -17,6 +17,17 @@
+ 
+ 
+ 
++//enable esmc auto
++#define P50_CMD_ESMC_AUTO    "ptp2 e e auto\n"
++
++//holdover time
++#define P50_CMD_HOLD_TIME    "ptp2 t h 0\n"
++
++//clock status to clock class map
++#define P50_CMD_CLOCK_CLASS  "ptp2 g c 6 248 248\n"
++
++//clock class to ssm map
++#define P50_CMD_SSM_CLASS    "ptp2 e esmc map 248 0x04\n"
+ 
+ 
+ //enable ntp
+diff --git a/fpga/fpga-v09.16_tq2416.rbf b/fpga/fpga-v09.16_tq2416.rbf
+deleted file mode 100644
+index cf80ff2..0000000
+Binary files a/fpga/fpga-v09.16_tq2416.rbf and /dev/null differ

@@ -166,7 +166,7 @@ command subcommand value: Sets associated parameter to new value.
 //9600
 #define	P50_CMD_IN_B9600		"ptp2 g i default 9600\n"
 //vco
-#define P50_CMD_VCO             "ptp2 config -v 1000\n"
+#define P50_CMD_VCO             "ptp2 config -v 0\n"
 //clock mode
 #define P50_CMD_CLOCK_SLAVE     "ptp2 c s on\n"
 

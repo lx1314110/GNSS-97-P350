@@ -17,6 +17,17 @@
 
 
 
+//enable esmc auto
+#define P50_CMD_ESMC_AUTO    "ptp2 e e auto\n"
+
+//holdover time
+#define P50_CMD_HOLD_TIME    "ptp2 t h 0\n"
+
+//clock status to clock class map
+#define P50_CMD_CLOCK_CLASS  "ptp2 g c 6 248 248\n"
+
+//clock class to ssm map
+#define P50_CMD_SSM_CLASS    "ptp2 e esmc map 248 0x04\n"
 
 
 //enable ntp
